@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+        .task {
+            display: flex;
+            justify-content: space-between;
+            width: 300px;
+            padding: 10px;
+            border: 1px solid rgba(87, 85, 85, 0.43);
+            margin: 5px 0;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        button {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<h1>To-Do List</h1>
+<input type="text" id="taskDescription" placeholder="Nova tarefa">
+<button onclick="addTask()">Adicionar Tarefa</button>
+<button onClick="loadTasks()">Listar Tarefas</button>
+<div id="tasksContainer"></div>
+
+<script>
+    const API_URL = 'http://localhost:8080/api/tasks';
+
+    // Função para obter e exibir todas as tarefas
+    async function loadTasks() {
+        const response = await fetch(API_URL);
+        const tasks = await response.json();
+        const tasksContainer = document.getElementById('tasksContainer');
+        tasksContainer.innerHTML = '';
+
+        tasks.forEach(task => {
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task';
+            taskElement.innerHTML = `
+                    <span class="${task.completed ? 'completed' : ''}">
+                        ${task.description}
+                    </span>
+                    <button onclick="toggleTask(${task.id}, ${task.completed})">
+                        ${task.completed ? 'Desmarcar' : 'Concluir'}
+                    </button>
+                    <button onclick="deleteTask(${task.id})">Excluir</button>
+                `;
+            tasksContainer.appendChild(taskElement);
+        });
+    }
+
+    // Função para adicionar uma nova tarefa
+    async function addTask() {
+        const description = document.getElementById('taskDescription').value;
+        if (!description) return alert('Por favor, insira uma descrição.');
+
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description, completed: false })
+        });
+        document.getElementById('taskDescription').value = '';
+        loadTasks();
+    }
+
+    // Função para marcar ou desmarcar uma tarefa como concluída
+    async function toggleTask(id, completed) {
+        await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ completed: !completed })
+        });
+        loadTasks();
+    }
+
+    // Função para excluir uma tarefa
+    async function deleteTask(id) {
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        loadTasks();
+    }
+
+    // Carregar as tarefas ao abrir a página
+    loadTasks();
+</script>
+</body>
+</html>
